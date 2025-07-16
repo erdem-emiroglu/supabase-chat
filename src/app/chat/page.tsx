@@ -1,7 +1,6 @@
 'use client'
 
 import { RealtimeChat } from '@/components/realtime-chat'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useMessagesQuery } from '@/hooks/use-messages-query'
 import { storeMessages, getRoomList, getMessageCount } from '@/services/chat.service'
@@ -14,14 +13,32 @@ export default function ChatPage() {
   const searchParams = useSearchParams()
   const roomName = searchParams.get('room') || 'general'
   const username = searchParams.get('user') || ''
-  
-  const [currentRoomName, setCurrentRoomName] = useState(roomName)
-  const [currentUsername, setCurrentUsername] = useState(username)
+
   const [availableRooms, setAvailableRooms] = useState<string[]>([])
   const [messageCount, setMessageCount] = useState<number>(0)
   const [showRoomSelector, setShowRoomSelector] = useState(false)
   
-  const { data: messages } = useMessagesQuery({ roomName: currentRoomName })
+  const { data: messages } = useMessagesQuery({ roomName: roomName })
+
+  const loadMessageCount = async () => {
+    if (roomName) {
+      try {
+        const count = await getMessageCount(roomName)
+        setMessageCount(count)
+      } catch (error) {
+        console.error('Failed to load message count:', error)
+      }
+    }
+  }
+
+  const loadRooms = async () => {
+    try {
+      const rooms = await getRoomList()
+      setAvailableRooms(rooms)
+    } catch (error) {
+      console.error('Failed to load rooms:', error)
+    }
+  }
 
   useEffect(() => {
     if (!username) {
@@ -29,35 +46,16 @@ export default function ChatPage() {
       return
     }
     
-    const loadRooms = async () => {
-      try {
-        const rooms = await getRoomList()
-        setAvailableRooms(rooms)
-      } catch (error) {
-        console.error('Failed to load rooms:', error)
-      }
-    }
-    loadRooms()
-  }, [username, router])
-
-  useEffect(() => {
-    const loadMessageCount = async () => {
-      if (currentRoomName) {
-        try {
-          const count = await getMessageCount(currentRoomName)
-          setMessageCount(count)
-        } catch (error) {
-          console.error('Failed to load message count:', error)
-        }
-      }
-    }
-    loadMessageCount()
-  }, [currentRoomName])
+    void Promise.all([
+      loadMessageCount(),
+      loadRooms()
+    ])
+  }, [username, roomName])
 
   const handleMessage = async (messages: ChatMessage[]) => {
     try {
-      await storeMessages(messages, { roomName: currentRoomName })
-      const count = await getMessageCount(currentRoomName)
+      await storeMessages(messages, { roomName: roomName })
+      const count = await getMessageCount(roomName)
       setMessageCount(count)
     } catch (error) {
       console.error('Failed to store messages:', error)
@@ -65,9 +63,8 @@ export default function ChatPage() {
   }
 
   const handleRoomSelect = (selectedRoom: string) => {
-    setCurrentRoomName(selectedRoom)
     setShowRoomSelector(false)
-    router.push(`/chat?room=${selectedRoom}&user=${currentUsername}`)
+    router.push(`/chat?room=${selectedRoom}&user=${username}`)
   }
 
   const handleLeaveRoom = () => {
@@ -84,10 +81,10 @@ export default function ChatPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h1 className="text-base sm:text-lg font-semibold truncate">
-              Chat Room: {currentRoomName}
+              Chat Room: {roomName}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              Welcome, {currentUsername}! • {messageCount} messages
+              Welcome, {username}! • {messageCount} messages
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -116,7 +113,7 @@ export default function ChatPage() {
               {availableRooms.map((room) => (
                 <Button
                   key={room}
-                  variant={room === currentRoomName ? "default" : "outline"}
+                  variant={room === roomName ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleRoomSelect(room)}
                   className="text-xs px-2 sm:px-3 h-7 sm:h-8"
@@ -131,8 +128,8 @@ export default function ChatPage() {
       
       <div className="flex-1 min-h-0">
         <RealtimeChat
-          roomName={currentRoomName}
-          username={currentUsername}
+          roomName={roomName}
+          username={username}
           messages={messages}
           onMessage={handleMessage}
         />
