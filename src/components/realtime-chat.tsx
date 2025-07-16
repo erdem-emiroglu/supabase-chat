@@ -107,7 +107,7 @@ export const RealtimeChat = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
-      <div className="border-b border-border p-4 space-y-4">
+      <div className="border-b border-border p-3 sm:p-4 space-y-3 sm:space-y-4 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -115,7 +115,7 @@ export const RealtimeChat = ({
               placeholder="Search messages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10"
+              className="pl-10 pr-10 text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             {searchTerm && (
@@ -134,8 +134,10 @@ export const RealtimeChat = ({
             size="sm"
             onClick={handleSearch}
             disabled={isSearching}
+            className="text-xs px-2 sm:px-3 h-8 sm:h-9"
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            <span className="hidden sm:inline">{isSearching ? 'Searching...' : 'Search'}</span>
+            <span className="sm:hidden">{isSearching ? '...' : '🔍'}</span>
           </Button>
 
         </div>
@@ -146,35 +148,37 @@ export const RealtimeChat = ({
         )}
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {displayMessages.length === 0 ? (
-          <div className="text-center text-sm text-muted-foreground">
-            {searchResults.length > 0 ? 'No messages found.' : 'No messages yet. Start the conversation!'}
-          </div>
-        ) : null}
-        <div className="space-y-1">
-          {displayMessages.map((message, index) => {
-            const prevMessage = index > 0 ? displayMessages[index - 1] : null
-            const showHeader = !prevMessage || prevMessage.user.name !== message.user.name
+      <div ref={containerRef} className="flex-1 overflow-y-auto min-h-0">
+        <div className="p-4 space-y-4">
+          {displayMessages.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground">
+              {searchResults.length > 0 ? 'No messages found.' : 'No messages yet. Start the conversation!'}
+            </div>
+          ) : null}
+          <div className="space-y-1">
+            {displayMessages.map((message, index) => {
+              const prevMessage = index > 0 ? displayMessages[index - 1] : null
+              const showHeader = !prevMessage || prevMessage.user.name !== message.user.name
 
-            return (
-              <div
-                key={message.id}
-                className="group animate-in fade-in slide-in-from-bottom-4 duration-300"
-              >
-                <ChatMessageItem
-                  message={message}
-                  isOwnMessage={message.user.name === username}
-                  showHeader={showHeader}
-                  onMessageDelete={handleMessageDelete}
-                />
-              </div>
-            )
-          })}
+              return (
+                <div
+                  key={message.id}
+                  className="group animate-in fade-in slide-in-from-bottom-4 duration-300"
+                >
+                  <ChatMessageItem
+                    message={message}
+                    isOwnMessage={message.user.name === username}
+                    showHeader={showHeader}
+                    onMessageDelete={handleMessageDelete}
+                  />
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      <form onSubmit={handleSendMessage} className="flex w-full gap-2 border-t border-border p-4">
+      <form onSubmit={handleSendMessage} className="flex w-full gap-2 border-t border-border p-3 sm:p-4 flex-shrink-0">
         <Input
           className={cn(
             'rounded-full bg-background text-sm transition-all duration-300',
@@ -188,7 +192,7 @@ export const RealtimeChat = ({
         />
         {isConnected && newMessage.trim() && (
           <Button
-            className="aspect-square rounded-full animate-in fade-in slide-in-from-right-4 duration-300"
+            className="aspect-square rounded-full animate-in fade-in slide-in-from-right-4 duration-300 h-9 sm:h-10"
             type="submit"
             disabled={!isConnected}
           >
