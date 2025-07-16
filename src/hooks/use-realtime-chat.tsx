@@ -2,19 +2,11 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useState } from 'react'
+import type { ChatMessage } from '@/types/chat'
 
 interface UseRealtimeChatProps {
   roomName: string
   username: string
-}
-
-export interface ChatMessage {
-  id: string
-  content: string
-  user: {
-    name: string
-  }
-  createdAt: string
 }
 
 const EVENT_MESSAGE_TYPE = 'message'
@@ -58,7 +50,6 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
         createdAt: new Date().toISOString(),
       }
 
-      // Update local state immediately for the sender
       setMessages((current) => [...current, message])
 
       await channel.send({

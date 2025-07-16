@@ -1,20 +1,26 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
-import type { ChatMessage } from './use-realtime-chat'
+import { fetchMessages } from '@/services/chat.service'
+import type { ChatMessage } from '@/types/chat'
 
 interface UseMessagesQueryProps {
   roomName?: string
+  limit?: number
+  offset?: number
 }
 
-export function useMessagesQuery({ roomName }: UseMessagesQueryProps = {}) {
+export function useMessagesQuery({ 
+  roomName, 
+  limit, 
+  offset 
+}: UseMessagesQueryProps = {}) {
   const [data, setData] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    async function fetchMessages() {
+    const loadMessages = async () => {
       if (!roomName) {
         setData([])
         setIsLoading(false)
@@ -25,25 +31,13 @@ export function useMessagesQuery({ roomName }: UseMessagesQueryProps = {}) {
         setIsLoading(true)
         setError(null)
         
-        const supabase = createClient()
-        const { data: messages, error } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('room_name', roomName)
-          .order('created_at', { ascending: true })
+        const messages = await fetchMessages({
+          roomName,
+          limit,
+          offset
+        })
 
-        if (error) throw error
-
-        const formattedMessages: ChatMessage[] = messages?.map(msg => ({
-          id: msg.id,
-          content: msg.content,
-          user: {
-            name: msg.user_name
-          },
-          createdAt: msg.created_at
-        })) || []
-
-        setData(formattedMessages)
+        setData(messages)
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch messages'))
         setData([])
@@ -52,8 +46,8 @@ export function useMessagesQuery({ roomName }: UseMessagesQueryProps = {}) {
       }
     }
 
-    fetchMessages()
-  }, [roomName])
+    loadMessages()
+  }, [roomName, limit, offset])
 
   return { data, isLoading, error }
 } 

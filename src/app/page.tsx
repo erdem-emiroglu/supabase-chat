@@ -1,9 +1,10 @@
 'use client'
 
 import { RealtimeChat } from '@/components/realtime-chat'
+import { Input } from '@/components/ui/input'
 import { useMessagesQuery } from '@/hooks/use-messages-query'
-import { storeMessages } from '@/lib/store-messages'
-import type { ChatMessage } from '@/hooks/use-realtime-chat'
+import { storeMessages } from '@/services/chat.service'
+import type { ChatMessage } from '@/types/chat'
 import { useState } from 'react'
 
 export default function ChatPage() {
@@ -31,7 +32,7 @@ export default function ChatPage() {
   if (!hasJoined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg border shadow-lg">
+        <div className="w-[90%] md:w-full max-w-md p-8 space-y-6 bg-card rounded-lg border shadow-lg">
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">Join Chat</h1>
             <p className="text-muted-foreground mt-2">
@@ -44,13 +45,13 @@ export default function ChatPage() {
               <label htmlFor="username" className="text-sm font-medium">
                 Username
               </label>
-              <input
+              <Input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="w-full"
                 required
               />
             </div>
@@ -59,13 +60,13 @@ export default function ChatPage() {
               <label htmlFor="room" className="text-sm font-medium">
                 Room Name
               </label>
-              <input
+              <Input
                 id="room"
                 type="text"
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
                 placeholder="Enter room name"
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="w-full"
                 required
               />
             </div>
