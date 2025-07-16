@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useState } from 'react'
 import type { ChatMessage } from '@/types/chat'
+import { generateUUID } from '@/lib/utils'
 
 interface UseRealtimeChatProps {
   roomName: string
@@ -42,7 +43,7 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
       if (!channel || !isConnected) return
 
       const message: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         content,
         user: {
           name: username,

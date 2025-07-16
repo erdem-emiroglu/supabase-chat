@@ -1,13 +1,31 @@
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/types/chat'
+import { Button } from '@/components/ui/button'
+import { Trash2 } from 'lucide-react'
+import { deleteMessage } from '@/services/chat.service'
 
 interface ChatMessageItemProps {
   message: ChatMessage
   isOwnMessage: boolean
   showHeader: boolean
+  onMessageDelete?: (messageId: string) => void
 }
 
-export const ChatMessageItem = ({ message, isOwnMessage, showHeader }: ChatMessageItemProps) => {
+export const ChatMessageItem = ({ 
+  message, 
+  isOwnMessage, 
+  showHeader, 
+  onMessageDelete 
+}: ChatMessageItemProps) => {
+  const handleDelete = async () => {
+    try {
+      await deleteMessage(message.id)
+      onMessageDelete?.(message.id)
+    } catch (error) {
+      console.error('Failed to delete message:', error)
+    }
+  }
+
   return (
     <div className={`flex mt-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -31,13 +49,25 @@ export const ChatMessageItem = ({ message, isOwnMessage, showHeader }: ChatMessa
             </span>
           </div>
         )}
-        <div
-          className={cn(
-            'py-2 px-3 rounded-xl text-sm w-fit',
-            isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+        <div className="flex items-end gap-2">
+          <div
+            className={cn(
+              'py-2 px-3 rounded-xl text-sm w-fit',
+              isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+            )}
+          >
+            {message.content}
+          </div>
+          {isOwnMessage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
           )}
-        >
-          {message.content}
         </div>
       </div>
     </div>

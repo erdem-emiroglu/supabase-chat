@@ -2,21 +2,53 @@
 
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { useMessagesQuery } from '@/hooks/use-messages-query'
-import { storeMessages } from '@/services/chat.service'
+import { storeMessages, getRoomList, getMessageCount } from '@/services/chat.service'
 import type { ChatMessage } from '@/types/chat'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function ChatPage() {
   const [roomName, setRoomName] = useState('general')
   const [username, setUsername] = useState('')
   const [hasJoined, setHasJoined] = useState(false)
+  const [availableRooms, setAvailableRooms] = useState<string[]>([])
+  const [messageCount, setMessageCount] = useState<number>(0)
+  const [showRoomSelector, setShowRoomSelector] = useState(false)
   
   const { data: messages } = useMessagesQuery({ roomName: hasJoined ? roomName : undefined })
+
+  useEffect(() => {
+    const loadRooms = async () => {
+      try {
+        const rooms = await getRoomList()
+        setAvailableRooms(rooms)
+      } catch (error) {
+        console.error('Failed to load rooms:', error)
+      }
+    }
+    loadRooms()
+  }, [])
+
+  useEffect(() => {
+    const loadMessageCount = async () => {
+      if (hasJoined && roomName) {
+        try {
+          const count = await getMessageCount(roomName)
+          setMessageCount(count)
+        } catch (error) {
+          console.error('Failed to load message count:', error)
+        }
+      }
+    }
+    loadMessageCount()
+  }, [hasJoined, roomName])
 
   const handleMessage = async (messages: ChatMessage[]) => {
     try {
       await storeMessages(messages, { roomName })
+      const count = await getMessageCount(roomName)
+      setMessageCount(count)
     } catch (error) {
       console.error('Failed to store messages:', error)
     }
@@ -27,6 +59,11 @@ export default function ChatPage() {
     if (username.trim()) {
       setHasJoined(true)
     }
+  }
+
+  const handleRoomSelect = (selectedRoom: string) => {
+    setRoomName(selectedRoom)
+    setShowRoomSelector(false)
   }
 
   if (!hasJoined) {
@@ -60,15 +97,42 @@ export default function ChatPage() {
               <label htmlFor="room" className="text-sm font-medium">
                 Room Name
               </label>
-              <Input
-                id="room"
-                type="text"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                placeholder="Enter room name"
-                className="w-full"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="room"
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="Enter room name"
+                  className="w-full"
+                  required
+                />
+                {availableRooms.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRoomSelector(!showRoomSelector)}
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-2 text-xs"
+                  >
+                    Browse
+                  </Button>
+                )}
+                {showRoomSelector && availableRooms.length > 0 && (
+                  <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-card border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    {availableRooms.map((room) => (
+                      <button
+                        key={room}
+                        type="button"
+                        onClick={() => handleRoomSelect(room)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                      >
+                        {room}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             
             <button
@@ -89,15 +153,43 @@ export default function ChatPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold">Chat Room: {roomName}</h1>
-            <p className="text-sm text-muted-foreground">Welcome, {username}!</p>
+            <p className="text-sm text-muted-foreground">
+              Welcome, {username}! • {messageCount} messages
+            </p>
           </div>
-          <button
-            onClick={() => setHasJoined(false)}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Leave Room
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRoomSelector(!showRoomSelector)}
+            >
+              Switch Room
+            </Button>
+            <button
+              onClick={() => setHasJoined(false)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Leave Room
+            </button>
+          </div>
         </div>
+        {showRoomSelector && availableRooms.length > 0 && (
+          <div className="mt-2 p-2 bg-muted rounded-md">
+            <p className="text-sm font-medium mb-2">Available Rooms:</p>
+            <div className="flex flex-wrap gap-2">
+              {availableRooms.map((room) => (
+                <Button
+                  key={room}
+                  variant={room === roomName ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleRoomSelect(room)}
+                >
+                  {room}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
       
       <div className="flex-1">
