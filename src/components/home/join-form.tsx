@@ -92,7 +92,7 @@ export const JoinForm = memo(function JoinForm({ initialRooms = [] }: JoinFormPr
               </Button>
             )}
             {showRoomSelector && availableRooms.length > 0 && (
-              <div className="absolute z-10 left-0 right-0 top-full mt-2 bg-card/90 backdrop-blur-sm border border-border/50 rounded-xl shadow-xl max-h-40 overflow-y-auto">
+              <div className="absolute z-10 left-0 right-0 top-full mt-2 bg-card border border-border/50 rounded-xl max-h-40 overflow-y-auto">
                 {availableRooms.map((room) => (
                   <button
                     key={room}
