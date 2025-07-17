@@ -30,6 +30,7 @@ export const RealtimeChat = ({
     messages: realtimeMessages,
     sendMessage,
     isConnected,
+    onlineUsers,
   } = useRealtimeChat({
     roomName,
     username,
@@ -82,7 +83,7 @@ export const RealtimeChat = ({
       const results = await searchMessages(roomName, searchTerm, 20)
       setSearchResults(results)
     } catch (error) {
-      console.error('Search failed:', error)
+      // Silent error handling for search
     } finally {
       setIsSearching(false)
     }
@@ -106,16 +107,16 @@ export const RealtimeChat = ({
   const displayMessages = searchResults.length > 0 ? searchResults : allMessages
 
   return (
-    <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
-      <div className="border-b border-border p-3 sm:p-4 space-y-3 sm:space-y-4 flex-shrink-0">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full w-full bg-background text-foreground antialiased relative">
+      <div className="border-b border-border/50 bg-muted/10 p-4 space-y-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search messages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-10 text-sm"
+              className="pl-10 pr-10 h-10 rounded-xl border-border/50 bg-background/50 text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             {searchTerm && (
@@ -134,7 +135,7 @@ export const RealtimeChat = ({
             size="sm"
             onClick={handleSearch}
             disabled={isSearching}
-            className="text-xs px-2 sm:px-3 h-8 sm:h-9"
+            className="h-10 px-4 rounded-xl border-border/50 text-sm"
           >
             <span className="hidden sm:inline">{isSearching ? 'Searching...' : 'Search'}</span>
             <span className="sm:hidden">{isSearching ? '...' : '🔍'}</span>
@@ -143,7 +144,13 @@ export const RealtimeChat = ({
         </div>
         {searchResults.length > 0 && (
           <div className="text-sm text-muted-foreground">
-            Found {searchResults.length} messages matching "{searchTerm}"
+            Found {searchResults.length} messages matching &quot;{searchTerm}&quot;
+          </div>
+        )}
+        {onlineUsers.length > 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>{onlineUsers.length} online: {onlineUsers.map(user => user.user).join(', ')}</span>
           </div>
         )}
       </div>
@@ -178,10 +185,10 @@ export const RealtimeChat = ({
         </div>
       </div>
 
-      <form onSubmit={handleSendMessage} className="flex w-full gap-2 border-t border-border p-3 sm:p-4 flex-shrink-0">
+      <form onSubmit={handleSendMessage} className="flex w-full gap-3 border-t border-border/50 p-4 flex-shrink-0 bg-background/80 backdrop-blur-sm sticky bottom-0 z-10 safe-area-bottom">
         <Input
           className={cn(
-            'rounded-full bg-background text-sm transition-all duration-300',
+            'rounded-full bg-background text-base transition-all duration-300 min-h-[40px]',
             isConnected && newMessage.trim() ? 'w-[calc(100%-36px)]' : 'w-full'
           )}
           type="text"
@@ -192,7 +199,7 @@ export const RealtimeChat = ({
         />
         {isConnected && newMessage.trim() && (
           <Button
-            className="aspect-square rounded-full animate-in fade-in slide-in-from-right-4 duration-300 h-9 sm:h-10"
+            className="aspect-square rounded-xl animate-in fade-in slide-in-from-right-4 duration-300 h-10 w-10"
             type="submit"
             disabled={!isConnected}
           >

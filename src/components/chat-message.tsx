@@ -21,9 +21,9 @@ export const ChatMessageItem = ({
     try {
       await deleteMessage(message.id)
       onMessageDelete?.(message.id)
-    } catch (error) {
-      console.error('Failed to delete message:', error)
-    }
+          } catch (error) {
+        // Silent error handling for message deletion
+      }
   }
 
   return (

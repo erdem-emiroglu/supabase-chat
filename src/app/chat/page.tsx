@@ -25,9 +25,9 @@ export default function ChatPage() {
       try {
         const count = await getMessageCount(roomName)
         setMessageCount(count)
-      } catch (error) {
-        console.error('Failed to load message count:', error)
-      }
+             } catch (error) {
+         // Silent error handling for message count loading
+       }
     }
   }
 
@@ -35,9 +35,9 @@ export default function ChatPage() {
     try {
       const rooms = await getRoomList()
       setAvailableRooms(rooms)
-    } catch (error) {
-      console.error('Failed to load rooms:', error)
-    }
+           } catch (error) {
+         // Silent error handling for room loading
+       }
   }
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function ChatPage() {
       const count = await getMessageCount(roomName)
       setMessageCount(count)
     } catch (error) {
-      console.error('Failed to store messages:', error)
+      // Silent error handling for message storage
     }
   }
 
@@ -76,49 +76,51 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      <header className="border-b bg-card px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="h-dvh flex flex-col">
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm px-4 sm:px-6 py-4 sm:py-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-base sm:text-lg font-semibold truncate">
-              Chat Room: {roomName}
+            <h1 className="text-lg sm:text-xl font-bold truncate">
+              #{roomName}
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              Welcome, {username}! • {messageCount} messages
+            <p className="text-sm text-muted-foreground truncate">
+              {username} • {messageCount} messages
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowRoomSelector(!showRoomSelector)}
-              className="text-xs px-2 sm:px-3"
+              className="h-9 px-4 rounded-lg border-border/50 text-sm"
             >
               <span className="hidden sm:inline">Switch Room</span>
               <span className="sm:hidden">Switch</span>
             </Button>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleLeaveRoom}
-              className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded"
+              className="h-9 px-4 rounded-lg text-sm text-muted-foreground hover:text-foreground"
             >
-              <span className="hidden sm:inline">Leave Room</span>
-              <span className="sm:hidden">Leave</span>
-            </button>
+              <span className="hidden sm:inline">Leave</span>
+              <span className="sm:hidden">×</span>
+            </Button>
           </div>
         </div>
         {showRoomSelector && availableRooms.length > 0 && (
-          <div className="mt-2 p-2 sm:p-3 bg-muted rounded-md">
-            <p className="text-xs sm:text-sm font-medium mb-2">Available Rooms:</p>
-            <div className="flex flex-wrap gap-1 sm:gap-2">
+          <div className="mt-4 p-4 bg-muted/30 backdrop-blur-sm rounded-xl border border-border/30">
+            <p className="text-sm font-medium mb-3 text-foreground/80">Available Rooms</p>
+            <div className="flex flex-wrap gap-2">
               {availableRooms.map((room) => (
                 <Button
                   key={room}
                   variant={room === roomName ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleRoomSelect(room)}
-                  className="text-xs px-2 sm:px-3 h-7 sm:h-8"
+                  className="h-8 px-3 rounded-lg text-sm border-border/50"
                 >
-                  {room}
+                  #{room}
                 </Button>
               ))}
             </div>

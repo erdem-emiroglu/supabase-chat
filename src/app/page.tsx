@@ -19,7 +19,7 @@ export default function JoinPage() {
         const rooms = await getRoomList()
         setAvailableRooms(rooms)
       } catch (error) {
-        console.error('Failed to load rooms:', error)
+        // Silent error handling for room loading
       }
     }
     loadRooms()
@@ -38,80 +38,85 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-[90%] md:w-full max-w-md p-8 space-y-6 bg-card rounded-lg border shadow-lg">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Join Chat</h1>
-          <p className="text-muted-foreground mt-2">
-            Enter your details to start chatting
+    <div className="h-dvh flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
+            <div className="w-8 h-8 bg-primary rounded-lg"></div>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Supabase Chat</h1>
+          <p className="text-muted-foreground text-lg">
+            Real-time conversations, anywhere
           </p>
         </div>
         
-        <form onSubmit={handleJoinChat} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">
-              Username
-            </label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              className="w-full"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="room" className="text-sm font-medium">
-              Room Name
-            </label>
-            <div className="relative">
+        <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 p-8 shadow-xl">
+                    <form onSubmit={handleJoinChat} className="space-y-6">
+            <div className="space-y-3">
+              <label htmlFor="username" className="text-sm font-medium text-foreground/80">
+                Username
+              </label>
               <Input
-                id="room"
+                id="username"
                 type="text"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                placeholder="Enter room name"
-                className="w-full"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Choose a username"
+                className="h-12 rounded-xl border-border/50 bg-background/50 text-base placeholder:text-muted-foreground/60"
                 required
               />
-              {availableRooms.length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowRoomSelector(!showRoomSelector)}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-2 text-xs"
-                >
-                  Browse
-                </Button>
-              )}
-              {showRoomSelector && availableRooms.length > 0 && (
-                <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-card border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                  {availableRooms.map((room) => (
-                    <button
-                      key={room}
-                      type="button"
-                      onClick={() => handleRoomSelect(room)}
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                    >
-                      {room}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
+            
+            <div className="space-y-3">
+              <label htmlFor="room" className="text-sm font-medium text-foreground/80">
+                Room
+              </label>
+              <div className="relative">
+                <Input
+                  id="room"
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="Enter room name"
+                  className="h-12 rounded-xl border-border/50 bg-background/50 text-base placeholder:text-muted-foreground/60"
+                  required
+                />
+                {availableRooms.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRoomSelector(!showRoomSelector)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 px-3 text-xs rounded-lg border-border/50"
+                  >
+                    Browse
+                  </Button>
+                )}
+                {showRoomSelector && availableRooms.length > 0 && (
+                  <div className="absolute z-10 left-0 right-0 top-full mt-2 bg-card/90 backdrop-blur-sm border border-border/50 rounded-xl shadow-xl max-h-40 overflow-y-auto">
+                    {availableRooms.map((room) => (
+                      <button
+                        key={room}
+                        type="button"
+                        onClick={() => handleRoomSelect(room)}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/50 text-sm first:rounded-t-xl last:rounded-b-xl transition-colors"
+                      >
+                        {room}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           
-          <button
-            type="submit"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            Join Chat
-          </button>
-        </form>
+            <Button
+              type="submit"
+              className="w-full h-12 text-base font-medium rounded-xl"
+            >
+              Join Chat
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   )

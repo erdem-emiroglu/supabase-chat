@@ -10,6 +10,11 @@ interface UseRealtimeChatProps {
   username: string
 }
 
+interface PresenceUser {
+  user: string
+  online_at: string
+}
+
 const EVENT_MESSAGE_TYPE = 'message'
 
 export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
@@ -17,6 +22,7 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([])
 
   useEffect(() => {
     const newChannel = supabase.channel(roomName)
@@ -25,9 +31,50 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
       .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
         setMessages((current) => [...current, payload.payload as ChatMessage])
       })
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = newChannel.presenceState()
+        const users = Object.values(presenceState)
+          .flat()
+          .filter((presence) => 
+            presence && typeof presence === 'object' && 'user' in presence && 'online_at' in presence
+          )
+          .map((presence) => ({
+            user: (presence as Record<string, unknown>).user as string,
+            online_at: (presence as Record<string, unknown>).online_at as string
+          }))
+        
+        setOnlineUsers(users)
+      })
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        const newUsers = newPresences
+          .filter((presence) => 
+            presence && typeof presence === 'object' && 'user' in presence && 'online_at' in presence
+          )
+          .map((presence) => ({
+            user: (presence as Record<string, unknown>).user as string,
+            online_at: (presence as Record<string, unknown>).online_at as string
+          }))
+        
+        setOnlineUsers((current) => [...current, ...newUsers])
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        const leftUsernames = leftPresences
+          .filter((presence) => 
+            presence && typeof presence === 'object' && 'user' in presence
+          )
+          .map((presence) => (presence as Record<string, unknown>).user as string)
+        
+        setOnlineUsers((current) => 
+          current.filter(user => !leftUsernames.includes(user.user))
+        )
+      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
+          await newChannel.track({
+            user: username,
+            online_at: new Date().toISOString()
+          })
         }
       })
 
@@ -62,5 +109,5 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
     [channel, isConnected, username]
   )
 
-  return { messages, sendMessage, isConnected }
+  return { messages, sendMessage, isConnected, onlineUsers }
 }
