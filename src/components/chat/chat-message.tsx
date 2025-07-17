@@ -3,6 +3,8 @@ import type { ChatMessage } from '@/types/chat'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import { deleteMessage } from '@/services/chat.service'
+import { handleError, handleSuccess } from '@/lib/error-handler'
+import { memo, useCallback, useMemo } from 'react'
 
 interface ChatMessageItemProps {
   message: ChatMessage
@@ -11,20 +13,30 @@ interface ChatMessageItemProps {
   onMessageDelete?: (messageId: string) => void
 }
 
-export const ChatMessageItem = ({ 
+export const ChatMessageItem = memo(function ChatMessageItem({ 
   message, 
   isOwnMessage, 
   showHeader, 
   onMessageDelete 
-}: ChatMessageItemProps) => {
-  const handleDelete = async () => {
+}: ChatMessageItemProps) {
+  const handleDelete = useCallback(async () => {
     try {
       await deleteMessage(message.id)
       onMessageDelete?.(message.id)
-          } catch (error) {
-        // Silent error handling for message deletion
-      }
-  }
+      handleSuccess('Message deleted')
+    } catch (error) {
+      handleError(error, 'Failed to delete message')
+    }
+  }, [message.id, onMessageDelete])
+
+  const formattedTime = useMemo(() => 
+    new Date(message.createdAt).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }), 
+    [message.createdAt]
+  )
 
   return (
     <div className={`flex mt-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
@@ -41,11 +53,7 @@ export const ChatMessageItem = ({
           >
             <span className={'font-medium'}>{message.user.name}</span>
             <span className="text-foreground/50 text-xs">
-              {new Date(message.createdAt).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })}
+              {formattedTime}
             </span>
           </div>
         )}
@@ -72,4 +80,4 @@ export const ChatMessageItem = ({
       </div>
     </div>
   )
-}
+})

@@ -1,7 +1,8 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { handleError } from '@/lib/error-handler'
 import type { ChatMessage } from '@/types/chat'
 import { generateUUID } from '@/lib/utils'
 
@@ -18,11 +19,21 @@ interface PresenceUser {
 const EVENT_MESSAGE_TYPE = 'message'
 
 export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([])
+
+  const parsePresenceData = useCallback((presence: unknown): PresenceUser | null => {
+    if (!presence || typeof presence !== 'object' || !('user' in presence) || !('online_at' in presence)) {
+      return null
+    }
+    return {
+      user: (presence as Record<string, unknown>).user as string,
+      online_at: (presence as Record<string, unknown>).online_at as string
+    }
+  }, [])
 
   useEffect(() => {
     const newChannel = supabase.channel(roomName)
@@ -32,41 +43,48 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
         setMessages((current) => [...current, payload.payload as ChatMessage])
       })
       .on('presence', { event: 'sync' }, () => {
-        const presenceState = newChannel.presenceState()
-        const users = Object.values(presenceState)
-          .flat()
-          .filter((presence) => 
-            presence && typeof presence === 'object' && 'user' in presence && 'online_at' in presence
-          )
-          .map((presence) => ({
-            user: (presence as Record<string, unknown>).user as string,
-            online_at: (presence as Record<string, unknown>).online_at as string
-          }))
-        
-        setOnlineUsers(users)
+        try {
+          const presenceState = newChannel.presenceState()
+          const users = Object.values(presenceState)
+            .flat()
+            .map(parsePresenceData)
+            .filter((user): user is PresenceUser => user !== null)
+          
+          setOnlineUsers(users)
+        } catch (error) {
+          handleError(error, 'Failed to sync presence')
+        }
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const newUsers = newPresences
-          .filter((presence) => 
-            presence && typeof presence === 'object' && 'user' in presence && 'online_at' in presence
-          )
-          .map((presence) => ({
-            user: (presence as Record<string, unknown>).user as string,
-            online_at: (presence as Record<string, unknown>).online_at as string
-          }))
-        
-        setOnlineUsers((current) => [...current, ...newUsers])
+        try {
+          const newUsers = newPresences
+            .map(parsePresenceData)
+            .filter((user): user is PresenceUser => user !== null)
+          
+          setOnlineUsers((current) => {
+            const existingUsernames = new Set(current.map(u => u.user))
+            const uniqueNewUsers = newUsers.filter(u => !existingUsernames.has(u.user))
+            return [...current, ...uniqueNewUsers]
+          })
+        } catch (error) {
+          handleError(error, 'Failed to handle user join')
+        }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftUsernames = leftPresences
-          .filter((presence) => 
-            presence && typeof presence === 'object' && 'user' in presence
+        try {
+          const leftUsernames = new Set(
+            leftPresences
+              .map(parsePresenceData)
+              .filter((user): user is PresenceUser => user !== null)
+              .map(user => user.user)
           )
-          .map((presence) => (presence as Record<string, unknown>).user as string)
-        
-        setOnlineUsers((current) => 
-          current.filter(user => !leftUsernames.includes(user.user))
-        )
+          
+          setOnlineUsers((current) => 
+            current.filter(user => !leftUsernames.has(user.user))
+          )
+        } catch (error) {
+          handleError(error, 'Failed to handle user leave')
+        }
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -83,28 +101,32 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
     return () => {
       supabase.removeChannel(newChannel)
     }
-  }, [roomName, username, supabase])
+  }, [roomName, username, supabase, parsePresenceData])
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!channel || !isConnected) return
+      if (!channel || !isConnected || !content.trim()) return
 
-      const message: ChatMessage = {
-        id: generateUUID(),
-        content,
-        user: {
-          name: username,
-        },
-        createdAt: new Date().toISOString(),
+      try {
+        const message: ChatMessage = {
+          id: generateUUID(),
+          content: content.trim(),
+          user: {
+            name: username,
+          },
+          createdAt: new Date().toISOString(),
+        }
+
+        setMessages((current) => [...current, message])
+
+        await channel.send({
+          type: 'broadcast',
+          event: EVENT_MESSAGE_TYPE,
+          payload: message,
+        })
+      } catch (error) {
+        handleError(error, 'Failed to send message')
       }
-
-      setMessages((current) => [...current, message])
-
-      await channel.send({
-        type: 'broadcast',
-        event: EVENT_MESSAGE_TYPE,
-        payload: message,
-      })
     },
     [channel, isConnected, username]
   )

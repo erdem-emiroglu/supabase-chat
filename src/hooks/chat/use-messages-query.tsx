@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fetchMessages } from '@/services/chat.service'
+import { handleError } from '@/lib/error-handler'
 import type { ChatMessage } from '@/types/chat'
 
 interface UseMessagesQueryProps {
@@ -12,42 +13,51 @@ interface UseMessagesQueryProps {
 
 export function useMessagesQuery({ 
   roomName, 
-  limit, 
-  offset 
+  limit = 50, 
+  offset = 0 
 }: UseMessagesQueryProps = {}) {
   const [data, setData] = useState<ChatMessage[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (!roomName) {
-        setData([])
-        setIsLoading(false)
-        return
-      }
 
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        const messages = await fetchMessages({
-          roomName,
-          limit,
-          offset
-        })
 
-        setData(messages)
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch messages'))
-        setData([])
-      } finally {
-        setIsLoading(false)
-      }
+  const loadMessages = useCallback(async () => {
+    if (!roomName) {
+      setData([])
+      setIsLoading(false)
+      return
     }
 
-    loadMessages()
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const messages = await fetchMessages({
+        roomName,
+        limit,
+        offset
+      })
+
+      setData(messages)
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch messages')
+      setError(error)
+      setData([])
+      handleError(error, 'Failed to load messages')
+    } finally {
+      setIsLoading(false)
+    }
   }, [roomName, limit, offset])
 
-  return { data, isLoading, error }
+  useEffect(() => {
+    loadMessages()
+  }, [loadMessages])
+
+  return { 
+    data, 
+    isLoading, 
+    error,
+    refetch: loadMessages
+  }
 } 

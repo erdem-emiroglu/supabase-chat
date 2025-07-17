@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, memo } from 'react'
 import { useChatScroll } from '@/hooks/chat/use-chat-scroll'
 import { useRealtimeChat } from '@/hooks/chat/use-realtime-chat'
 import { useMessagesQuery } from '@/hooks/chat/use-messages-query'
@@ -8,6 +8,7 @@ import { ChatMessageItem } from '@/components/chat/chat-message'
 import { SearchBar } from '@/components/chat/search-bar'
 import { PresenceIndicator } from '@/components/chat/presence-indicator'
 import { MessageInput } from '@/components/chat/message-input'
+
 import type { ChatMessage } from '@/types/chat'
 
 interface ChatContainerProps {
@@ -16,7 +17,11 @@ interface ChatContainerProps {
   onMessage?: (messages: ChatMessage[]) => void
 }
 
-export function ChatContainer({ roomName, username, onMessage }: ChatContainerProps) {
+export const ChatContainer = memo(function ChatContainer({ 
+  roomName, 
+  username, 
+  onMessage 
+}: ChatContainerProps) {
   const { containerRef, scrollToBottom } = useChatScroll()
   const { data: initialMessages = [] } = useMessagesQuery({ roomName })
 
@@ -41,20 +46,21 @@ export function ChatContainer({ roomName, username, onMessage }: ChatContainerPr
   }, [initialMessages, realtimeMessages])
 
   useEffect(() => {
-    if (onMessage) {
+    if (onMessage && allMessages.length > 0) {
       onMessage(allMessages)
     }
   }, [allMessages, onMessage])
 
   useEffect(() => {
-    scrollToBottom()
-  }, [allMessages, scrollToBottom])
+    const timeoutId = setTimeout(() => {
+      scrollToBottom()
+    }, 100)
+    return () => clearTimeout(timeoutId)
+  }, [allMessages.length, scrollToBottom])
 
   const handleMessageDelete = useCallback((messageId: string) => {
     const updatedMessages = allMessages.filter(msg => msg.id !== messageId)
-    if (onMessage) {
-      onMessage(updatedMessages)
-    }
+    onMessage?.(updatedMessages)
   }, [allMessages, onMessage])
 
   const handleSearchResults = useCallback((results: ChatMessage[]) => {
@@ -121,4 +127,4 @@ export function ChatContainer({ roomName, username, onMessage }: ChatContainerPr
       <MessageInput onSendMessage={handleSendMessage} isConnected={isConnected} />
     </div>
   )
-} 
+}) 

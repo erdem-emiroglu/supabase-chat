@@ -6,10 +6,10 @@ export const compose = <T>(...fns: Array<(arg: T) => T>) => (value: T): T =>
 
 export const curry = <T, U, V>(fn: (a: T, b: U) => V) => (a: T) => (b: U): V => fn(a, b)
 
-export const partial = <T extends any[], U>(fn: (...args: T) => U, ...partialArgs: Partial<T>) =>
-  (...remainingArgs: any[]): U => fn(...(partialArgs.concat(remainingArgs) as T))
+export const partial = <T extends unknown[], U>(fn: (...args: T) => U, ...partialArgs: Partial<T>) =>
+  (...remainingArgs: unknown[]): U => fn(...(partialArgs.concat(remainingArgs) as T))
 
-export const memoize = <T extends any[], U>(fn: (...args: T) => U): ((...args: T) => U) => {
+export const memoize = <T extends unknown[], U>(fn: (...args: T) => U): ((...args: T) => U) => {
   const cache = new Map<string, U>()
   return (...args: T): U => {
     const key = JSON.stringify(args)
@@ -22,7 +22,7 @@ export const memoize = <T extends any[], U>(fn: (...args: T) => U): ((...args: T
   }
 }
 
-export const debounce = <T extends any[]>(fn: (...args: T) => void, delay: number) => {
+export const debounce = <T extends unknown[]>(fn: (...args: T) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout
   return (...args: T): void => {
     clearTimeout(timeoutId)
@@ -30,7 +30,7 @@ export const debounce = <T extends any[]>(fn: (...args: T) => void, delay: numbe
   }
 }
 
-export const throttle = <T extends any[]>(fn: (...args: T) => void, limit: number) => {
+export const throttle = <T extends unknown[]>(fn: (...args: T) => void, limit: number) => {
   let inThrottle = false
   return (...args: T): void => {
     if (!inThrottle) {

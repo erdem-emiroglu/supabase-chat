@@ -3,8 +3,9 @@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, X } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo, useRef } from 'react'
 import { searchMessages } from '@/services/chat.service'
+import { handleError } from '@/lib/error-handler'
 import type { ChatMessage } from '@/types/chat'
 
 interface SearchBarProps {
@@ -13,26 +14,48 @@ interface SearchBarProps {
   onClearSearch: () => void
 }
 
-export function SearchBar({ roomName, onSearchResults, onClearSearch }: SearchBarProps) {
+export const SearchBar = memo(function SearchBar({ 
+  roomName, 
+  onSearchResults, 
+  onClearSearch 
+}: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
-  const handleSearch = useCallback(async () => {
-    if (!searchTerm.trim()) {
+  const performSearch = useCallback(async (term: string) => {
+    if (!term.trim()) {
       onClearSearch()
       return
     }
 
     try {
       setIsSearching(true)
-      const results = await searchMessages(roomName, searchTerm, 20)
+      const results = await searchMessages(roomName, term, 20)
       onSearchResults(results)
     } catch (error) {
-      // Silent error handling for search
+      handleError(error, 'Search failed')
+      onClearSearch()
     } finally {
       setIsSearching(false)
     }
-  }, [searchTerm, roomName, onSearchResults, onClearSearch])
+  }, [roomName, onSearchResults, onClearSearch])
+
+  const handleSearchTermChange = useCallback((value: string) => {
+    setSearchTerm(value)
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    
+    if (value.trim()) {
+      timeoutRef.current = setTimeout(() => {
+        performSearch(value)
+      }, 300)
+    } else {
+      onClearSearch()
+    }
+  }, [performSearch, onClearSearch])
 
   const handleClearSearch = useCallback(() => {
     setSearchTerm('')
@@ -47,9 +70,9 @@ export function SearchBar({ roomName, onSearchResults, onClearSearch }: SearchBa
         <Input
           placeholder="Search messages..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => handleSearchTermChange(e.target.value)}
           className="pl-10 pr-10 h-10 rounded-xl border-border/50 bg-background/50 text-sm"
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          onKeyDown={(e) => e.key === 'Enter' && performSearch(searchTerm)}
         />
         {searchTerm && (
           <Button
@@ -65,8 +88,8 @@ export function SearchBar({ roomName, onSearchResults, onClearSearch }: SearchBa
       <Button
         variant="outline"
         size="sm"
-        onClick={handleSearch}
-        disabled={isSearching}
+        onClick={() => performSearch(searchTerm)}
+        disabled={isSearching || !searchTerm.trim()}
         className="h-10 px-4 rounded-xl border-border/50 text-sm"
       >
         <span className="hidden sm:inline">{isSearching ? 'Searching...' : 'Search'}</span>
@@ -74,4 +97,4 @@ export function SearchBar({ roomName, onSearchResults, onClearSearch }: SearchBa
       </Button>
     </div>
   )
-} 
+}) 

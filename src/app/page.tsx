@@ -5,7 +5,7 @@ import { getRoomList } from '@/services/chat.service'
 async function getInitialRooms() {
   try {
     return await getRoomList()
-  } catch (error) {
+  } catch {
     return []
   }
 }

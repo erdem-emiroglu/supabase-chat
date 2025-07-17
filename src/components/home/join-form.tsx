@@ -3,14 +3,15 @@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getRoomList } from '@/services/chat.service'
-import { useState, useEffect } from 'react'
+import { handleError } from '@/lib/error-handler'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface JoinFormProps {
   initialRooms?: string[]
 }
 
-export function JoinForm({ initialRooms = [] }: JoinFormProps) {
+export const JoinForm = memo(function JoinForm({ initialRooms = [] }: JoinFormProps) {
   const router = useRouter()
   const [roomName, setRoomName] = useState('general')
   const [username, setUsername] = useState('')
@@ -18,28 +19,34 @@ export function JoinForm({ initialRooms = [] }: JoinFormProps) {
   const [showRoomSelector, setShowRoomSelector] = useState(false)
 
   useEffect(() => {
+    if (initialRooms.length > 0) {
+      setAvailableRooms(initialRooms)
+      return
+    }
+
     const loadRooms = async () => {
       try {
         const rooms = await getRoomList()
         setAvailableRooms(rooms)
       } catch (error) {
-        // Silent error handling for room loading
+        handleError(error, 'Failed to load available rooms')
       }
     }
     loadRooms()
-  }, [])
+  }, [initialRooms])
 
-  const handleJoinChat = (e: React.FormEvent) => {
+  const handleJoinChat = useCallback((e: React.FormEvent) => {
     e.preventDefault()
-    if (username.trim()) {
-      router.push(`/chat?room=${roomName}&user=${username}`)
+    const trimmedUsername = username.trim()
+    if (trimmedUsername) {
+      router.push(`/chat?room=${roomName}&user=${trimmedUsername}`)
     }
-  }
+  }, [username, roomName, router])
 
-  const handleRoomSelect = (selectedRoom: string) => {
+  const handleRoomSelect = useCallback((selectedRoom: string) => {
     setRoomName(selectedRoom)
     setShowRoomSelector(false)
-  }
+  }, [])
 
   return (
     <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 p-8 shadow-xl">
@@ -110,4 +117,4 @@ export function JoinForm({ initialRooms = [] }: JoinFormProps) {
       </form>
     </div>
   )
-} 
+}) 

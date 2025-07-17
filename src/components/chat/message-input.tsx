@@ -3,7 +3,7 @@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Send } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { cn } from '@/lib/utils'
 
 interface MessageInputProps {
@@ -11,15 +11,19 @@ interface MessageInputProps {
   isConnected: boolean
 }
 
-export function MessageInput({ onSendMessage, isConnected }: MessageInputProps) {
+export const MessageInput = memo(function MessageInput({ 
+  onSendMessage, 
+  isConnected 
+}: MessageInputProps) {
   const [newMessage, setNewMessage] = useState('')
 
   const handleSendMessage = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-      if (!newMessage.trim() || !isConnected) return
+      const trimmedMessage = newMessage.trim()
+      if (!trimmedMessage || !isConnected) return
 
-      onSendMessage(newMessage)
+      onSendMessage(trimmedMessage)
       setNewMessage('')
     },
     [newMessage, isConnected, onSendMessage]
@@ -49,4 +53,4 @@ export function MessageInput({ onSendMessage, isConnected }: MessageInputProps) 
       )}
     </form>
   )
-} 
+}) 

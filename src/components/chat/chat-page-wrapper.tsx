@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ChatHeader } from '@/components/chat/chat-header'
 import { ChatContainer } from '@/components/chat/chat-container'
 import { storeMessages, getRoomList, getMessageCount } from '@/services/chat.service'
+import { handleError } from '@/lib/error-handler'
 import type { ChatMessage } from '@/types/chat'
 
 interface ChatPageWrapperProps {
@@ -12,7 +13,10 @@ interface ChatPageWrapperProps {
   initialMessageCount?: number
 }
 
-export function ChatPageWrapper({ initialRooms = [], initialMessageCount = 0 }: ChatPageWrapperProps) {
+export const ChatPageWrapper = memo(function ChatPageWrapper({ 
+  initialRooms = [], 
+  initialMessageCount = 0 
+}: ChatPageWrapperProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const roomName = searchParams.get('room') || 'general'
@@ -21,52 +25,48 @@ export function ChatPageWrapper({ initialRooms = [], initialMessageCount = 0 }: 
   const [availableRooms, setAvailableRooms] = useState<string[]>(initialRooms)
   const [messageCount, setMessageCount] = useState<number>(initialMessageCount)
 
+  const loadMessageCount = useCallback(async () => {
+    if (!roomName) return
+    
+    try {
+      const count = await getMessageCount(roomName)
+      setMessageCount(count)
+    } catch (error) {
+      handleError(error, 'Failed to load message count')
+    }
+  }, [roomName])
+
+  const loadRooms = useCallback(async () => {
+    try {
+      const rooms = await getRoomList()
+      setAvailableRooms(rooms)
+    } catch (error) {
+      handleError(error, 'Failed to load rooms')
+    }
+  }, [])
+
   useEffect(() => {
     if (!username) {
       router.push('/')
       return
     }
 
-    const loadData = async () => {
-      const loadMessageCount = async () => {
-        if (roomName) {
-          try {
-            const count = await getMessageCount(roomName)
-            setMessageCount(count)
-          } catch (error) {
-            // Silent error handling for message count loading
-          }
-        }
-      }
+    Promise.all([loadMessageCount(), loadRooms()])
+  }, [username, roomName, router, loadMessageCount, loadRooms])
 
-      const loadRooms = async () => {
-        try {
-          const rooms = await getRoomList()
-          setAvailableRooms(rooms)
-        } catch (error) {
-          // Silent error handling for room loading
-        }
-      }
-
-      await Promise.all([loadMessageCount(), loadRooms()])
-    }
-
-    loadData()
-  }, [username, roomName, router])
-
-  const handleMessage = async (messages: ChatMessage[]) => {
+  const handleMessage = useCallback(async (messages: ChatMessage[]) => {
     try {
       await storeMessages(messages, { roomName })
       const count = await getMessageCount(roomName)
       setMessageCount(count)
     } catch (error) {
-      // Silent error handling for message storage
+      handleError(error, 'Failed to store messages')
     }
-  }
+  }, [roomName])
 
-  const handleRoomChange = (room: string) => {
+  const handleRoomChange = useCallback(() => {
     // Room change is handled by router.push in ChatHeader
-  }
+  }, [])
 
   if (!username) {
     return null
@@ -91,4 +91,4 @@ export function ChatPageWrapper({ initialRooms = [], initialMessageCount = 0 }: 
       </div>
     </div>
   )
-} 
+}) 
