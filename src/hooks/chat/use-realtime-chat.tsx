@@ -42,19 +42,6 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
       .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
         setMessages((current) => [...current, payload.payload as ChatMessage])
       })
-      .on('presence', { event: 'sync' }, () => {
-        try {
-          const presenceState = newChannel.presenceState()
-          const users = Object.values(presenceState)
-            .flat()
-            .map(parsePresenceData)
-            .filter((user): user is PresenceUser => user !== null)
-          
-          setOnlineUsers(users)
-        } catch (error) {
-          handleError(error, 'Failed to sync presence')
-        }
-      })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         try {
           const newUsers = newPresences

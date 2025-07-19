@@ -9,7 +9,6 @@ interface ChatHeaderProps {
   username: string
   messageCount: number
   availableRooms?: string[]
-  onRoomChange?: (room: string) => void
 }
 
 export function ChatHeader({ 
@@ -17,14 +16,12 @@ export function ChatHeader({
   username, 
   messageCount, 
   availableRooms = [],
-  onRoomChange 
 }: ChatHeaderProps) {
   const router = useRouter()
   const [showRoomSelector, setShowRoomSelector] = useState(false)
 
   const handleRoomSelect = (selectedRoom: string) => {
     setShowRoomSelector(false)
-    onRoomChange?.(selectedRoom)
     router.push(`/chat?room=${selectedRoom}&user=${username}`)
   }
 

@@ -64,10 +64,6 @@ export const ChatPageWrapper = memo(function ChatPageWrapper({
     }
   }, [roomName])
 
-  const handleRoomChange = useCallback(() => {
-    // Room change is handled by router.push in ChatHeader
-  }, [])
-
   if (!username) {
     return null
   }
@@ -79,7 +75,6 @@ export const ChatPageWrapper = memo(function ChatPageWrapper({
         username={username}
         messageCount={messageCount}
         availableRooms={availableRooms}
-        onRoomChange={handleRoomChange}
       />
       
       <div className="flex-1 min-h-0">
